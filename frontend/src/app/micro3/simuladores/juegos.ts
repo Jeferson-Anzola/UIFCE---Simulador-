@@ -5,7 +5,7 @@ import { linspace } from '../../core/numerico';
 import {
   AZUL, COLORES, DORADO, ROJO, SUAVE, VERDE, aviso, figura, figuraVacia, lectura, punto, resultados, tabla, texto,
 } from '../../core/tema';
-import { JUEGOS, Juego2x2, gatillo, induccion, nashMixto, nashPuros, pago, respuestaA, respuestaB, validarJuego } from '../modelos/juegos';
+import { JUEGOS, Juego2x2, gatillo, induccion, nashContinuos, nashMixto, nashPuros, pago, respuestaA, respuestaB, validarJuego } from '../modelos/juegos';
 import { refLozano } from './_comun';
 
 const SIM_ID = 'm3-juegos';
@@ -41,6 +41,15 @@ function normal(p: P, g: Juego2x2): Simulacion {
   const rB = respuestaB(g);
   fig.data.push({ type: 'scatter', x: rA.q, y: rA.p, mode: 'lines', name: 'Mejor respuesta de A, p(q)', line: { color: AZUL, width: 4 } });
   fig.data.push({ type: 'scatter', x: rB.q, y: rB.p, mode: 'lines', name: 'Mejor respuesta de B, q(p)', line: { color: ROJO, width: 3, dash: 'dash' } });
+  // Revisión 2026-11: con indiferencia frente a una acción pura, las mejores respuestas se superponen en un
+  // segmento y todo él son equilibrios de Nash.
+  const continuos = nashContinuos(g);
+  continuos.forEach((c, k) =>
+    fig.data.push({
+      type: 'scatter', x: c.q, y: c.p, mode: 'lines', name: 'Continuo de equilibrios de Nash', showlegend: k === 0,
+      line: { color: DORADO, width: 10 }, opacity: 0.45, hovertemplate: 'Equilibrio de Nash: q = %{x:.2f}, p = %{y:.2f}<extra></extra>',
+    }),
+  );
   const puros = nashPuros(g);
   for (const [i, j] of puros) {
     const [q, pr] = [j === 0 ? 1 : 0, i === 0 ? 1 : 0];
@@ -54,6 +63,12 @@ function normal(p: P, g: Juego2x2): Simulacion {
     `Puro: (A${i + 1}, B${j + 1})`, pago.A(g, i, j), pago.B(g, i, j),
   ]);
   if (mixto) filas.push([`Mixto: p = ${fmt(mixto.p, 3)}, q = ${fmt(mixto.q, 3)}`, mixto.uA, mixto.uB]);
+  for (const c of continuos)
+    filas.push([
+      `Continuo: q ∈ [${fmt(c.q[0], 2)}, ${fmt(c.q[1], 2)}], p ∈ [${fmt(c.p[0], 2)}, ${fmt(c.p[1], 2)}]`,
+      null,
+      null,
+    ]);
   const panel = [
     resultados([
       lectura('Matriz de pagos (A, B)', matriz(p, g)),

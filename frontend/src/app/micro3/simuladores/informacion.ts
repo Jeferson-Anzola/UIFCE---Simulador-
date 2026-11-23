@@ -31,11 +31,23 @@ function seleccion(p: P): Simulacion {
   const q = { k: p.k, tmin: p.tmin, tmax: p.tmax };
   const r = limones(q);
   const top = Math.max(q.tmax, disposicion(q, q.tmax)) * 1.1;
-  const ps = linspace(0, top, 200);
+  // Con p < θ_min nadie ofrece: la disposición a pagar solo existe desde θ_min (Varian, «La información asimétrica»).
+  const ps = linspace(q.tmin, top, 200);
   const fig = figura('Precio p', 'Disposición a pagar y precio', SIM_ID + '-limones', {
     xaxis: { range: [0, top] },
     yaxis: { range: [0, top] },
   });
+  // Calidades que se venden (θ ≤ p*) y las que salen del mercado (θ > p*): en el eje, θ y p se miden igual.
+  const corte = Math.min(Math.max(r.p, q.tmin), q.tmax);
+  const banda = (x0: number, x1: number, color: string, nombre: string) => {
+    if (x1 - x0 > 1e-9)
+      fig.data.push({
+        type: 'scatter', x: [x0, x1, x1, x0, x0], y: [0, 0, top, top, 0], fill: 'toself', fillcolor: color,
+        line: { width: 0 }, mode: 'lines', name: nombre, hoverinfo: 'name',
+      });
+  };
+  banda(q.tmin, corte, 'rgba(61,214,181,0.10)', `Calidades que se venden: θ ∈ [${fmt(q.tmin, 0)}, ${fmt(corte, 2)}]`);
+  banda(corte, q.tmax, 'rgba(255,122,133,0.12)', `Calidades que salen del mercado: θ ∈ (${fmt(corte, 2)}, ${fmt(q.tmax, 0)}]`);
   fig.data.push({ type: 'scatter', x: [0, top], y: [0, top], mode: 'lines', name: 'Precio p (recta de 45°)', line: { color: SUAVE, width: 2, dash: 'dot' } });
   fig.data.push({
     type: 'scatter', x: ps, y: ps.map((v) => disposicion(q, v)), mode: 'lines', name: 'Disposición a pagar: k × calidad media ofrecida',
@@ -43,7 +55,7 @@ function seleccion(p: P): Simulacion {
   });
   fig.data.push({
     type: 'scatter', x: [0, top], y: [q.k * (q.tmin + q.tmax) / 2, q.k * (q.tmin + q.tmax) / 2], mode: 'lines',
-    name: 'Disposición con información completa', line: { color: VERDE, width: 2, dash: 'dash' },
+    name: 'DAP si se ofrecieran todas las calidades: k·(θ_min + θ_max)/2', line: { color: VERDE, width: 2, dash: 'dash' },
   });
   punto(fig, r.p, r.p, 'Equilibrio con información asimétrica', DORADO, 'diamond', 'p*');
   const panel = [

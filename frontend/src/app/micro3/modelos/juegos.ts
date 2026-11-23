@@ -89,8 +89,49 @@ function escalon(ventaja: (t: number) => number): { q: number[]; p: number[] } {
     const t = v0 / (v0 - v1);
     return { q: [0, t, t, 1], p: [nivel(v0), nivel(v0), nivel(v1), nivel(v1)] };
   }
-  const v = Math.abs(v0) > 1e-12 ? v0 : v1;
-  return { q: [0, 1], p: [nivel(v), nivel(v)] };
+  const cero0 = Math.abs(v0) <= 1e-12;
+  const cero1 = Math.abs(v1) <= 1e-12;
+  // Indiferencia en un extremo: ahí la mejor respuesta es todo [0, 1] (segmento vertical), no un solo nivel.
+  if (cero0 && cero1) return { q: [0, 0, 1, 1, 0], p: [0, 1, 1, 0, 0] };
+  if (cero0) return { q: [0, 0, 1], p: [1 - nivel(v1), nivel(v1), nivel(v1)] };
+  if (cero1) return { q: [0, 1, 1], p: [nivel(v0), nivel(v0), 1 - nivel(v0)] };
+  return { q: [0, 1], p: [nivel(v0), nivel(v0)] };
+}
+
+/** Intervalo de t ∈ [0, 1] donde ventaja(t) ≥ 0 (ventaja lineal en t); null si es vacío. */
+function noNegativa(ventaja: (t: number) => number): [number, number] | null {
+  const f0 = ventaja(0);
+  const f1 = ventaja(1);
+  const ok0 = f0 >= -1e-12;
+  const ok1 = f1 >= -1e-12;
+  if (ok0 && ok1) return [0, 1];
+  if (!ok0 && !ok1) return null;
+  const t = f0 / (f0 - f1);
+  return ok0 ? [0, t] : [t, 1];
+}
+
+/**
+ * Continuos de equilibrios de Nash (Gibbons, cap. 1): si un jugador es indiferente entre sus dos acciones frente
+ * a una acción pura del otro, toda mezcla suya que mantenga esa acción como mejor respuesta del otro es un
+ * equilibrio. Devuelve los segmentos (q, p) de longitud positiva.
+ */
+export function nashContinuos(g: Juego2x2): { q: [number, number]; p: [number, number] }[] {
+  const out: { q: [number, number]; p: [number, number] }[] = [];
+  for (const j of [0, 1]) {
+    // B juega Bⱼ (q = 1 si j = 0); A indiferente en esa columna; p donde Bⱼ sigue siendo mejor respuesta de B.
+    if (Math.abs(pagoA(g, 0, j) - pagoA(g, 1, j)) > 1e-12) continue;
+    const r = noNegativa((p) => p * (pagoB(g, 0, j) - pagoB(g, 0, 1 - j)) + (1 - p) * (pagoB(g, 1, j) - pagoB(g, 1, 1 - j)));
+    const q = j === 0 ? 1 : 0;
+    if (r && r[1] - r[0] > 1e-9) out.push({ q: [q, q], p: r });
+  }
+  for (const i of [0, 1]) {
+    // A juega Aᵢ (p = 1 si i = 0); B indiferente en esa fila; q donde Aᵢ sigue siendo mejor respuesta de A.
+    if (Math.abs(pagoB(g, i, 0) - pagoB(g, i, 1)) > 1e-12) continue;
+    const r = noNegativa((q) => q * (pagoA(g, i, 0) - pagoA(g, 1 - i, 0)) + (1 - q) * (pagoA(g, i, 1) - pagoA(g, 1 - i, 1)));
+    const p = i === 0 ? 1 : 0;
+    if (r && r[1] - r[0] > 1e-9) out.push({ q: r, p: [p, p] });
+  }
+  return out;
 }
 
 /** Juego secuencial: A elige primero, B observa y responde. Inducción hacia atrás (desempates a favor de la primera acción). */
