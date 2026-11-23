@@ -24,6 +24,7 @@ import {
   demandaAgregada,
   ofertaAgregada,
   trayectoria,
+  validarDAOA,
 } from '../modelos/daoa';
 import { GRUPOS_BIENES, ref } from './_comun';
 
@@ -78,14 +79,67 @@ function trazarDA(fig: Figura, q: ParamsDAOA, pmax: number, nombre: string, colo
   });
 }
 
+/**
+ * Sin equilibrio de mediano plazo (p. ej. trampa deflacionaria, Blanchard cap. 9) la gráfica no se borra: se dibujan
+ * la DA, su tope con i = 0 y la OA de largo plazo para que se vea por qué no se cortan.
+ */
+function diagnostico(b: ParamsDAOA, n: ParamsDAOA, mensaje: string, p: P): Simulacion | null {
+  try {
+    validarDAOA(b);
+    validarDAOA(n);
+  } catch {
+    return null;
+  }
+  // Escala natural de precios: con P = M/(k·Ȳₙ) los saldos reales igualan k·Ȳₙ (tasa cercana a cero).
+  const pRef = Math.max(b.M / (b.k * b.Yn), n.M / (n.k * n.Yn), 1e-6);
+  const pmax = pRef * 4;
+  const ps = linspace(pmax * 0.01, pmax, 160);
+  const da = (q: ParamsDAOA) => ps.map((x) => demandaAgregada(q, x));
+  const daB = da(b);
+  const daN = da(n);
+  const topeI0 = (q: ParamsDAOA) => demandaAgregada(q, 1e-9);
+  const yTope = [topeI0(b), topeI0(n)].filter((v) => Number.isFinite(v) && v > 0);
+  const valores = [...daB, ...daN, b.Yn, n.Yn, ...yTope].filter((v) => Number.isFinite(v) && v > 0);
+  if (!valores.length) return null;
+  const ymax = Math.max(...valores) * 1.25;
+  const fig = figura('Producto Y', 'Nivel de precios P', SIM_ID, { xaxis: { range: [0, ymax] }, yaxis: { range: [0, pmax] } });
+  const choque = p.dM !== 0 || p.dG !== 0;
+  fig.data.push({ type: 'scatter', x: daB, y: ps, mode: 'lines', name: 'DA inicial', line: { color: AZUL, width: 3 } });
+  if (choque) fig.data.push({ type: 'scatter', x: daN, y: ps, mode: 'lines', name: 'DA después del choque', line: { color: VERDE, width: 3 } });
+  const tope = topeI0(choque ? n : b);
+  if (Number.isFinite(tope) && tope > 0 && tope < ymax)
+    fig.data.push({
+      type: 'scatter', x: [tope, tope], y: [0, pmax], mode: 'lines', name: `Tope de la DA con i = 0: Y = ${fmt(tope, 0)}`,
+      line: { color: MORADO, width: 1.5, dash: 'dash' },
+    });
+  fig.data.push({ type: 'scatter', x: [b.Yn, b.Yn], y: [0, pmax], mode: 'lines', name: 'Ȳₙ (OA de largo plazo)', line: { color: SUAVE, width: 2, dash: 'dot' } });
+  if (n.Yn !== b.Yn)
+    fig.data.push({ type: 'scatter', x: [n.Yn, n.Yn], y: [0, pmax], mode: 'lines', name: 'Ȳₙ después del choque', line: { color: SUAVE, width: 2, dash: 'dashdot' } });
+  return {
+    fig,
+    panel: [
+      resultados([
+        lectura(
+          'Sin equilibrio de mediano plazo',
+          aviso(mensaje, 'error'),
+          texto(
+            'La gráfica muestra por qué: la DA y la OA de largo plazo (Ȳₙ) no se cortan con un nivel de precios positivo.',
+            'pequeno texto-suave',
+          ),
+          ref('cap. 9: la trampa deflacionaria (la tasa no puede bajar de cero y los precios más bajos no reactivan el gasto).'),
+        ),
+      ]),
+    ],
+  };
+}
+
 export function calcular(p: P): Simulacion {
   const [b, n] = escenarios(p);
   let tr: Trayectoria;
   try {
     tr = trayectoria(b, n);
   } catch (e) {
-    if (e instanceof ErrorParametro)
-      return { fig: figuraVacia(e.message), panel: [aviso(e.message, 'error')] };
+    if (e instanceof ErrorParametro) return diagnostico(b, n, e.message, p) ?? { fig: figuraVacia(e.message), panel: [aviso(e.message, 'error')] };
     throw e;
   }
   const { inicial, impacto, final, camino } = tr;

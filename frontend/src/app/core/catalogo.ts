@@ -185,7 +185,7 @@ export const MACRO1: Materia = {
       'keynesiano',
       'Modelo Keynesiano (Gasto–Ingreso)',
       'Equilibrio en el mercado de bienes con precios fijos y multiplicador con impuestos proporcionales.',
-      String.raw`$Z = c_0 + c_1(Y - T) + \bar{I} + G, \quad T = T_0 + tY \quad\Rightarrow\quad Y^{*} = \dfrac{A}{1 - c_1(1-t)}$`,
+      String.raw`$Z = c_0 + c_1(Y - T) + \bar{I} + G, \quad T = T_0 + tY \quad\Rightarrow\quad Y^{*} = \dfrac{A}{1 - c_1(1-t)}, \quad A = c_0 - c_1 T_0 + \bar{I} + G$`,
       String.raw`$Y^{*} = \dfrac{A}{1 - c_1(1-t)}$`,
     ),
     listoMacro(

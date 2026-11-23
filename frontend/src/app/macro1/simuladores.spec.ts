@@ -102,7 +102,8 @@ for (const sim of SIMS) {
             const r = d.calcular({ ...base, [c.id]: v });
             expect(trazasLimpias(r), `${c.id} = ${v}`).toBe(true);
             if (esError(r)) {
-              expect(r.fig.data.length).toBe(0);
+              // DA–OA conserva la gráfica (DA y OA de largo plazo) cuando no hay mediano plazo (revisión 2026-11).
+              if (sim !== 'da-oa') expect(r.fig.data.length).toBe(0);
               expect(r.panel.length).toBe(1);
             } else expect(json(r), `${c.id} = ${v}`).not.toMatch(/NaN|undefined|Infinity/);
           }
