@@ -41,7 +41,7 @@ export function calcular({ familia, a, b, x0, y0 }: P): Simulacion {
     });
   });
   const [cx, cy] = curva(u, U0p, xs);
-  fig.data.push({ type: 'scatter', x: cx, y: cy, mode: 'lines', name: 'Curva que pasa por la canasta', line: { width: 3, color: DORADO } });
+  fig.data.push({ type: 'scatter', x: cx, y: cy, mode: 'lines', name: `Curva que pasa por la canasta: U(x0, y0) = ${fmt(U0p, 2)}`, line: { width: 3, color: DORADO } });
   const tms = u.tms(x0, y0);
   if (tms !== null && Number.isFinite(tms) && tms < 1e3) {
     const dx = 1.2;

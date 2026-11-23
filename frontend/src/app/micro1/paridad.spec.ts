@@ -71,9 +71,11 @@ for (const [simId, casos] of vigentes) {
           expect(normalizar(textos(r.panel)[0])).toBe(normalizar(caso.panel[0]));
           return;
         }
-        expect(r.fig.data.length).toBe(caso.trazas.length);
+        // Trazas didácticas añadidas tras la revisión de 2026-11 (meta = 'extra'): no existen en Python.
+        const datos = r.fig.data.filter((d) => d.meta !== 'extra');
+        expect(datos.length).toBe(caso.trazas.length);
         caso.trazas.forEach((t, k) => {
-          const d = r.fig.data[k];
+          const d = datos[k];
           const x = numeros(d.x);
           const y = numeros(d.y);
           expect(x.length, `n(x) traza ${k} ${t.name}`).toBe(t.n);

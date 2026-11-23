@@ -60,6 +60,16 @@ export function calcular({ CF, a, b, c, n, Ad, Bd, vista }: P): Simulacion {
     line: { color: ACENTO, dash: 'dot', width: 2 },
   });
   punto(fig, q, p, 'Producción de la empresa', undefined, undefined, undefined, { showlegend: false });
+  // Revisión 2026-11: la curva de oferta de la empresa es el CMg por encima del mínimo del CVMe (cierre);
+  // el mínimo del CMe es el punto de nivelación (Varian, «La oferta de la empresa»; Monsalve).
+  const qCierre = k.q_min_cvme();
+  const qsOferta = linspace(qCierre, qmax, 120);
+  data.push({
+    type: 'scatter', x: qsOferta, y: qsOferta.map(k.CMg), mode: 'lines', name: 'Oferta de la empresa (CMg ≥ mín CVMe)',
+    line: { color: ROJO, width: 9 }, opacity: 0.25, hoverinfo: 'skip', meta: 'extra',
+  });
+  punto(fig, qCierre, k.precio_cierre(), 'Punto de cierre (mín CVMe)', VERDE, 'triangle-up', 'cierre', { meta: 'extra', textposition: 'bottom right' });
+  punto(fig, k.q_min_cme(), k.precio_nivelacion(), 'Punto de nivelación (mín CMe)', AZUL, 'triangle-up', 'nivelación', { meta: 'extra', textposition: 'bottom right' });
 
   const ps = linspace(0, Ad / Bd, 300);
   data.push({
