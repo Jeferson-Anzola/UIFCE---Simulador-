@@ -5,7 +5,9 @@ import { ErrorParametro } from '../modelos/_comun';
 import { externalidad } from '../modelos/externalidades';
 import {
   COLOR,
+  EXTRA,
   area,
+  fijoPy,
   controlesCurvas,
   curvas,
   figuraBase,
@@ -76,6 +78,22 @@ function calcularSim(p: P): Simulacion {
     if (tipo === 'negativa')
       lineaCurva(fig, r.ofertaSocial, xMax, yMax, 'Costo social', COLOR.social);
     else lineaCurva(fig, r.demandaSocial, xMax, yMax, 'Valor social', COLOR.social);
+  }
+  // Altura de la cuña externa e en el óptimo: distancia vertical entre la curva privada y la social (Mankiw cap. 10).
+  if (e > 0 && r.qOptimo > 1e-9) {
+    const base = tipo === 'negativa' ? S.precio(r.qOptimo) : D.precio(r.qOptimo);
+    if (Number.isFinite(base) && base + e <= yMax * 1.5)
+      fig.data.push({
+        type: 'scatter',
+        x: [r.qOptimo, r.qOptimo],
+        y: [base, base + e],
+        mode: 'lines+markers',
+        name: `${tipo === 'negativa' ? 'Costo' : 'Beneficio'} externo por unidad e = ${fijoPy(e, 2)}`,
+        line: { color: COLOR.social, width: 2 },
+        marker: { symbol: 'line-ew', size: 12, line: { color: COLOR.social, width: 2 } },
+        hoverinfo: 'name',
+        ...EXTRA,
+      });
   }
   punto(fig, r.qMercado, r.pMercado, 'Equilibrio de mercado', undefined, undefined, 1, 'Mercado');
   guias(fig, r.qOptimo, r.pOptimo);

@@ -1,6 +1,6 @@
 /** Elasticidad precio e ingreso total (Mankiw, cap. 5). Port de elasticidad.py. */
 import { fmt } from '../../core/formato';
-import { Bloque, Params, Simulacion, SimuladorDef } from '../../core/tipos';
+import { Bloque, Figura, Params, Simulacion, SimuladorDef } from '../../core/tipos';
 import { aviso } from '../../core/tema';
 import { ErrorParametro, finito } from '../modelos/_comun';
 import {
@@ -11,9 +11,20 @@ import {
   puntoMedio,
 } from '../modelos/elasticidad';
 import { Demanda } from '../modelos/mercado';
-import { COLOR, area, figuraDoble, limite, lineaCurva, panel, punto, seguro } from './_ui';
+import { COLOR, EXTRA, area, figuraDoble, limite, lineaCurva, panel, punto, seguro } from './_ui';
 
 const SIM_ID = 'elasticidades';
+/** Áreas del cambio en el ingreso total: lo que se gana (verde) y lo que se pierde (rojo). */
+const EFECTO = { gana: 'rgba(61,214,181,0.45)', pierde: 'rgba(255,122,133,0.45)' };
+
+/** Rectángulo sombreado [x0, x1] × [y0, y1] (traza didáctica, fuera de la paridad con Python). */
+function rectangulo(fig: Figura, [x0, x1]: number[], [y0, y1]: number[], color: string, nombre: string): void {
+  if (x1 - x0 <= 1e-12 || y1 - y0 <= 1e-12) return;
+  fig.data.push({
+    type: 'scatter', x: [x0, x1, x1, x0, x0], y: [y0, y0, y1, y1, y0], fill: 'toself', fillcolor: color,
+    line: { width: 0 }, mode: 'lines', name: nombre, hoverinfo: 'name', ...EXTRA,
+  });
+}
 
 export const DEF = { caso: 'lineal' as string, a: 14, b: 2, precio: 3, delta: 1 };
 type P = typeof DEF;
@@ -79,7 +90,7 @@ function calcularSim(p: P): Simulacion {
         y: D.precio(qUnit * 0.45),
         xref: 'x',
         yref: 'y',
-        text: 'ε > 1 (elástica)',
+        text: '|ε| > 1 (elástica)',
         showarrow: false,
         xshift: 55,
         yshift: 12,
@@ -89,7 +100,7 @@ function calcularSim(p: P): Simulacion {
         y: D.precio(Math.min(qUnit * 1.5, a)),
         xref: 'x',
         yref: 'y',
-        text: 'ε < 1 (inelástica)',
+        text: '|ε| < 1 (inelástica)',
         showarrow: false,
         xshift: 50,
         yshift: 12,
@@ -124,8 +135,18 @@ function calcularSim(p: P): Simulacion {
     punto(fig, q1, p1, 'Punto 1', undefined, undefined, 1, '1');
     if (caso === 'lineal') punto(fig, p1, ingresoTotal(D, p1), 'IT en P₁', undefined, undefined, 2);
     const q2 = D.cantidad(p2);
-    if (Number.isFinite(q2) && Math.abs(delta) > 1e-12)
+    if (Number.isFinite(q2) && Math.abs(delta) > 1e-12) {
+      // ΔIT = P₂Q₂ − P₁Q₁ = (P₂ − P₁)·Q_común + P_bajo·(Q₂ − Q₁): efecto precio sobre las unidades que se venden a
+      // ambos precios y efecto cantidad sobre las unidades que cambian (Mankiw cap. 5; Krugman y Wells cap. 6).
+      if (caso === 'lineal') {
+        const [pBajo, pAlto] = [Math.min(p1, p2), Math.max(p1, p2)];
+        const [qComun, qMayor] = [Math.min(q1, q2), Math.max(q1, q2)];
+        const precioGana = p2 > p1; // con demanda de pendiente negativa, subir P gana por precio y pierde por cantidad
+        rectangulo(fig, [0, qComun], [pBajo, pAlto], precioGana ? EFECTO.gana : EFECTO.pierde, `Efecto precio = ${fmt((p2 - p1) * qComun)}`);
+        rectangulo(fig, [qComun, qMayor], [0, pBajo], precioGana ? EFECTO.pierde : EFECTO.gana, `Efecto cantidad = ${fmt(pBajo * (q2 - q1))}`);
+      }
       punto(fig, q2, p2, 'Punto 2', COLOR.nuevo, 'diamond', 1, '2');
+    }
   }
 
   const ePunto = elasticidadDemanda(D, p1);
@@ -139,6 +160,8 @@ function calcularSim(p: P): Simulacion {
       filas.push(
         ['Elasticidad por punto medio (1→2)', ePm],
         ['Cambio en el ingreso total', ingresoTotal(D, p2) - ingresoTotal(D, p1)],
+        ['Efecto precio (P₂ − P₁)·mín(Q₁, Q₂)', (p2 - p1) * Math.min(q1 as number, q2)],
+        ['Efecto cantidad mín(P₁, P₂)·(Q₂ − Q₁)', Math.min(p1, p2) * (q2 - (q1 as number))],
       );
     } catch (e) {
       if (!(e instanceof ErrorParametro)) throw e;
@@ -180,7 +203,7 @@ export const SIM: SimuladorDef = {
           max: 100,
           paso: 1,
         },
-        { id: 'b', etiqueta: 'Pendiente b', tipo: 'slider', min: 0.1, max: 10, paso: 0.1 },
+        { id: 'b', etiqueta: 'Respuesta b de Q al precio (pendiente dibujada: −1/b)', tipo: 'slider', min: 0.1, max: 10, paso: 0.1 },
       ],
     },
     {

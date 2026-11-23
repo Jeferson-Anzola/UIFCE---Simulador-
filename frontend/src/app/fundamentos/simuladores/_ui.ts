@@ -48,6 +48,12 @@ export const COLOR = {
 };
 
 export type Filas = (string | number | null)[][];
+
+/**
+ * Marca de las trazas didácticas añadidas tras la revisión de 2026-11 (no existen en el Bloque A en Python):
+ * la prueba de paridad las ignora y compara solo las trazas originales.
+ */
+export const EXTRA = { meta: 'extra' } as const;
 export type Sub = 1 | 2;
 
 /** Ejes del segundo panel de una figura doble. */
@@ -312,7 +318,7 @@ export function horizontal(
 export function controlesCurvas(elasticas = true): GrupoControles[] {
   const grupos: GrupoControles[] = [
     {
-      titulo: 'Demanda: Qd = a − b·P',
+      titulo: 'Demanda: Qd = a − b·P (pendiente dibujada: −1/b)',
       controles: [
         {
           id: 'a',
@@ -324,7 +330,7 @@ export function controlesCurvas(elasticas = true): GrupoControles[] {
         },
         {
           id: 'b',
-          etiqueta: 'Pendiente b (b = 0: inelástica)',
+          etiqueta: 'Respuesta b de Qd al precio (b = 0: perfectamente inelástica)',
           tipo: 'slider',
           min: 0,
           max: 10,
@@ -333,12 +339,12 @@ export function controlesCurvas(elasticas = true): GrupoControles[] {
       ],
     },
     {
-      titulo: 'Oferta: Qs = c + d·P',
+      titulo: 'Oferta: Qs = c + d·P (pendiente dibujada: 1/d)',
       controles: [
         { id: 'c', etiqueta: 'Intercepto c', tipo: 'slider', min: -50, max: 50, paso: 1 },
         {
           id: 'd',
-          etiqueta: 'Pendiente d (d = 0: inelástica)',
+          etiqueta: 'Respuesta d de Qs al precio (d = 0: perfectamente inelástica)',
           tipo: 'slider',
           min: 0,
           max: 10,

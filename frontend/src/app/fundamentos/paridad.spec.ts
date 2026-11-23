@@ -85,10 +85,12 @@ for (const [simId, casos] of Object.entries(fixtures as unknown as Record<string
         const def = await CARGADORES_FUNDAMENTOS[simId]();
         const r = def.calcular(caso.params);
 
-        // gráfica: mismas trazas, mismos valores
-        expect(r.fig.data.length, 'número de trazas').toBe(caso.trazas.length);
+        // gráfica: mismas trazas, mismos valores. Las trazas didácticas añadidas después de la revisión de
+        // 2026-11 (meta = 'extra') no existen en Python y no se comparan.
+        const datos = r.fig.data.filter((d) => d.meta !== 'extra');
+        expect(datos.length, 'número de trazas').toBe(caso.trazas.length);
         caso.trazas.forEach((t, k) => {
-          const d = r.fig.data[k];
+          const d = datos[k];
           const x = numeros(d.x);
           const y = numeros(d.y);
           expect(x.length, `n(x) traza ${k} ${t.name}`).toBe(t.n);
@@ -115,7 +117,8 @@ for (const [simId, casos] of Object.entries(fixtures as unknown as Record<string
             expect(sinNumeros((b as { texto: string }).texto)).toBe(sinNumeros(py.texto));
           else {
             const filas = (b as { filas: Celda[][] }).filas;
-            expect(filas.length, 'filas').toBe(py.filas.length);
+            // Las filas nuevas (p. ej. efecto precio y efecto cantidad) van al final de la tabla.
+            expect(filas.length, 'filas').toBeGreaterThanOrEqual(py.filas.length);
             py.filas.forEach((fila, n) => {
               expect(filas[n][0], `fila ${n}`).toBe(fila[0]);
               comparaCelda(filas[n][1], fila[1], `fila «${fila[0]}»`);

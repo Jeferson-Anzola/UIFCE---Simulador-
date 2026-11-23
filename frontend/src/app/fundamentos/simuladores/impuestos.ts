@@ -10,6 +10,7 @@ import {
 } from '../modelos/impuestos';
 import {
   COLOR,
+  EXTRA,
   area,
   controlesCurvas,
   curvas,
@@ -102,7 +103,7 @@ function calcularSim(p: P): Simulacion {
       'Excedente del productor',
       yMax,
     );
-    if (t > 0)
+    if (t > 0) {
       area(
         fig,
         0,
@@ -113,6 +114,32 @@ function calcularSim(p: P): Simulacion {
         'Recaudo',
         yMax,
       );
+      // Incidencia (Mankiw cap. 6): la línea del precio sin impuesto parte el recaudo en lo que paga cada lado.
+      const pe = Math.min(Math.max(r.pEquilibrio, r.pv), r.pc);
+      if (pe > r.pv + 1e-9 && pe < r.pc - 1e-9)
+        fig.data.push({
+          type: 'scatter',
+          x: [0, q],
+          y: [pe, pe],
+          mode: 'lines',
+          name: `Recaudo: compradores ${fijoPy((r.pc - pe) * q, 2)} (arriba) y vendedores ${fijoPy((pe - r.pv) * q, 2)} (abajo)`,
+          line: { color: COLOR.laffer, width: 2, dash: 'dot' },
+          hoverinfo: 'name',
+          ...EXTRA,
+        });
+    } else if (t < 0) {
+      // Subsidio: el gasto público es el rectángulo (Pv − Pc)·Q, que se monta sobre los excedentes (solo contorno).
+      fig.data.push({
+        type: 'scatter',
+        x: [0, q, q, 0, 0],
+        y: [r.pc, r.pc, r.pv, r.pv, r.pc],
+        mode: 'lines',
+        name: `Gasto en subsidio = ${fijoPy(Math.abs(r.recaudo), 2)}`,
+        line: { color: COLOR.laffer, width: 2, dash: 'dash' },
+        hoverinfo: 'name',
+        ...EXTRA,
+      });
+    }
   }
   if (Math.abs(t) > 1e-12 && Math.abs(r.qEquilibrio - q) > 1e-12) {
     const [q0, q1] = [q, r.qEquilibrio].sort((x, y) => x - y);

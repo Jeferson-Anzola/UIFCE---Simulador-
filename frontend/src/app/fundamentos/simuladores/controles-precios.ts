@@ -4,7 +4,9 @@ import { precioMaximo, precioMinimo } from '../modelos/controles';
 import { equilibrio } from '../modelos/mercado';
 import {
   COLOR,
+  EXTRA,
   area,
+  fijoPy,
   controlesCurvas,
   curvas,
   figuraBase,
@@ -97,6 +99,23 @@ function calcularSim(p: P): Simulacion {
         : 'Precio máximo';
   horizontal(fig, precioControl, xMax, nombreControl, COLOR.social, 1, 'dash');
   punto(fig, r.qEquilibrio, r.pEquilibrio, 'Equilibrio sin control', undefined, undefined, 1, 'E');
+  // Brecha entre lo demandado y lo ofrecido al precio controlado (Mankiw cap. 6, figs. 6-2 y 6-4).
+  if (r.obligatorio && Number.isFinite(r.faltante) && r.faltante > 1e-9) {
+    const [q0, q1] = [Math.min(r.qd, r.qs, xMax), Math.min(Math.max(r.qd, r.qs), xMax)];
+    const nombreBrecha =
+      tipo === 'maximo' ? 'Escasez' : lab ? 'Desempleo' : 'Excedente de oferta';
+    fig.data.push({
+      type: 'scatter',
+      x: [q0, q1],
+      y: [precioControl, precioControl],
+      mode: 'lines',
+      name: `${nombreBrecha} = Q${tipo === 'maximo' ? 'ᵈ − Qˢ' : 'ˢ − Qᵈ'} = ${fijoPy(r.faltante, 2)}`,
+      line: { color: COLOR.social, width: 7 },
+      opacity: 0.55,
+      hoverinfo: 'name',
+      ...EXTRA,
+    });
+  }
   if (r.obligatorio)
     for (const [q, nom] of [
       [Math.min(r.qd, xMax), 'Cantidad demandada'],
@@ -104,7 +123,7 @@ function calcularSim(p: P): Simulacion {
     ] as [number, string][])
       punto(fig, q, precioControl, nom, COLOR.nuevo, 'diamond');
 
-  const nombreFaltante =
+  const nombreFaltante0 =
     tipo === 'maximo'
       ? 'Escasez'
       : lab
@@ -116,7 +135,7 @@ function calcularSim(p: P): Simulacion {
     ['Cantidad demandada', r.qd],
     ['Cantidad ofrecida', r.qs],
     ['Cantidad transada', r.q],
-    [nombreFaltante, r.faltante],
+    [nombreFaltante0, r.faltante],
     ['Excedente del consumidor', r.bienestar.ec],
     ['Excedente del productor', r.bienestar.ep],
     ['Pérdida de peso muerto', r.ppm],
