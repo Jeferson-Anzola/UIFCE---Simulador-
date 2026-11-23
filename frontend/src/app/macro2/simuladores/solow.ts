@@ -115,8 +115,8 @@ export function calcular(p: P): Simulacion {
   curvaP(fig, ARR, [0, kmax], [0, Math.min(reposicion(n) * kmax, ytop * 1.5)], '(n + g + δ)·k', ROJO, 'intermedio');
   // ---------- Panel B (abajo)
   const invCambia = p.ds !== 0 || p.dA !== 0;
-  if (invCambia) curvaP(fig, ABA, ks, ks.map((k) => tope(b.s * produccion(b, k), ibot)), 's·A·f(k)', VERDE, 'inicial', 'sf₀');
-  curvaP(fig, ABA, ks, ks.map((k) => tope(n.s * produccion(n, k), ibot)), 's·A·f(k)', VERDE, 'final', invCambia ? 'sf₁' : 's·f(k)');
+  if (invCambia) curvaP(fig, ABA, ks, ks.map((k) => tope(b.s * produccion(b, k), ibot)), 's·A·f(k)', VERDE, 'inicial', 'sAf₀');
+  curvaP(fig, ABA, ks, ks.map((k) => tope(n.s * produccion(n, k), ibot)), 's·A·f(k)', VERDE, 'final', invCambia ? 'sAf₁' : 's·A·f(k)');
   if (p.dn !== 0) curvaP(fig, ABA, [0, kmax], [0, reposicion(b) * kmax], '(n + g + δ)·k', ROJO, 'inicial', 'rep₀');
   curvaP(fig, ABA, [0, kmax], [0, reposicion(n) * kmax], '(n + g + δ)·k', ROJO, 'final', p.dn !== 0 ? 'rep₁' : '(n+g+δ)k');
 
@@ -167,7 +167,7 @@ export function calcular(p: P): Simulacion {
     recorrido(fig, ABA, [[r0.k, r0.i], Math.abs(i1 - r0.i) > 1e-9 ? [k0, i1] : null, [r1.k, r1.i]], DORADO);
     recorrido(fig, ARR, [[r0.k, r0.y], Math.abs(y1 - r0.y) > 1e-9 ? [k0, y1] : null, [r1.k, r1.y]], DORADO);
   }
-  equilibrioP(fig, ABA, r1.k, r1.i, choque ? 'Nuevo estado estacionario' : 'Estado estacionario s·f(k*) = (n + g + δ)·k*', choque ? 'E₂' : 'k*', DORADO, {
+  equilibrioP(fig, ABA, r1.k, r1.i, choque ? 'Nuevo estado estacionario' : 'Estado estacionario s·A·f(k*) = (n + g + δ)·k*', choque ? 'E₂' : 'k*', DORADO, {
     ...op,
     simbolo: 'diamond',
   });
@@ -236,7 +236,7 @@ export function cadenaSolow(p: P, r0: ResSolow, r1: ResSolow, i1: number): Bloqu
     p.dn !== 0 && p.ds === 0 && p.dA === 0
       ? `La reposición (n + g + δ)·k ${p.dn > 0 ? 'sube' : 'baja'}: en k₀* la inversión ya ${p.dn > 0 ? 'no alcanza' : 'supera'} a la reposición → k ${sube ? '↑' : '↓'} → y ${sube ? '↑' : '↓'} hasta el nuevo k*.`
       : `En k₀* = ${fmt(r0.k, 3)} la inversión pasa a ${fmt(i1, 3)} frente a una reposición de ${fmt(rep0, 3)} → ` +
-        `${i1 > rep0 ? 'Δk > 0 → k ↑ → y ↑' : 'Δk < 0 → k ↓ → y ↓'} hasta que s·f(k) = (n + g + δ)·k.`;
+        `${i1 > rep0 ? 'Δk > 0 → k ↑ → y ↑' : 'Δk < 0 → k ↓ → y ↓'} hasta que s·A·f(k) = (n + g + δ)·k.`;
   return cadena(
     `Choque: ${partes.join(', ')}.`,
     trans,
@@ -258,7 +258,7 @@ export const SIM: SimuladorDef = {
       ],
     },
     {
-      titulo: 'Acumulación: Δk = s·f(k) − (n + g + δ)·k',
+      titulo: 'Acumulación: Δk = s·A·f(k) − (n + g + δ)·k',
       controles: [
         { id: 's', etiqueta: 'Tasa de ahorro s', tipo: 'slider', min: 0.05, max: 0.9, paso: 0.01 },
         { id: 'delta', etiqueta: 'Depreciación δ', tipo: 'slider', min: 0, max: 0.2, paso: 0.01 },

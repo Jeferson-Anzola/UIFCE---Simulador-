@@ -230,7 +230,10 @@ describe('Pasada 2 · solución analítica = cruce graficado (4 decimales)', () 
       expect(DAOA.cpcp(en, n, DAOA.desempleo(en, n, s.e1.Y))).toBeCloseTo(DAOA.inflacionDe(en, s.e1.P), 8);
       const q2 = { ...n, W: s.e2!.P };
       expect(DAOA.desempleo(en, q2, s.e2!.Y)).toBeCloseTo(p['ustar'] as number, 8);
-      expect(DAOA.cpcp(en, q2, p['ustar'] as number)).toBeCloseTo(DAOA.inflacionDe(en, s.e2!.P), 8);
+      // Largo plazo: con P₋₁ = P de E₂ la inflación es 0 y E₂ cae sobre la CPCP₂ en (u*, 0) (revisión 2026-11).
+      const en2 = DAOA.enlaceDesde(en, s.e2!.P);
+      expect(DAOA.cpcp(en2, q2, p['ustar'] as number)).toBeCloseTo(0, 8);
+      expect(DAOA.inflacionDe(en2, s.e2!.P)).toBeCloseTo(0, 12);
     }
   });
 

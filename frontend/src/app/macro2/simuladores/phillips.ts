@@ -68,7 +68,8 @@ export function calcular(p: P): Simulacion {
   }
   const choque = p.dpie !== 0 || p.dv !== 0;
   const metaVisible = uMeta >= 0 && uMeta <= 30;
-  const umax = Math.min(30, Math.max(15, p.uobj * 1.3, metaVisible ? uMeta * 1.2 : 0, n.ustar * 2));
+  // Dos escalas fijas (15 % o 30 %): un eje que cambia de forma continua hacía parecer que la pendiente β cambiaba.
+  const umax = Math.max(15, p.uobj * 1.3, metaVisible ? uMeta * 1.2 : 0, n.ustar * 2) > 15 ? 30 : 15;
   const us = linspace(0, umax, 80);
   const valores = [b, n].flatMap((q) => [inflacion(q, 0), inflacion(q, umax)]);
   const pmin = Math.min(-2, ...valores);

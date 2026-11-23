@@ -68,10 +68,12 @@ export function escenarios(p: P): [ParamsDAOA2, ParamsDAOA2] {
 }
 
 /**
- * Enlace DA-OA → Phillips. Con P₋₁ = P de E₀ (precio antes del choque):
- *   π = 100·(P − P₋₁)/P₋₁  y  ley de Okun u = u* − ω·100·(Y − Yₚ)/Yₚ.
- * Como la OACP es lineal, cada OACP se convierte exactamente en una CPCP
- *   π = πᵉ − β·(u − u*),  con  πᵉ = 100·(W − P₋₁)/P₋₁  y  β = Yₚ/(σ·P₋₁·ω).
+ * Enlace DA-OA → Phillips. π es la inflación del período: π = 100·(P − P₋₁)/P₋₁, con P₋₁ el precio del período
+ * anterior (en E₁, el de E₀), y la ley de Okun da u = u* − ω·100·(Y − Yₚ)/Yₚ. Como la OACP es lineal, cada OACP se
+ * convierte exactamente en una CPCP  π = πᵉ − β·(u − u*),  con  πᵉ = 100·(W − P₋₁)/P₋₁  y  β = Yₚ/(σ·P₋₁·ω).
+ * Revisión 2026-11: en el largo plazo el nivel de precios deja de cambiar (P₋₁ = P de E₂), así que E₂ queda en
+ * (u*, π = 0). Un choque único de demanda deja precios más altos, no inflación permanente (Blanchard caps. 8–9;
+ * Mankiw cap. 14). Antes se graficaba la variación acumulada de P desde E₀ como si fuera inflación.
  */
 export interface Enlace {
   P0: number;
@@ -85,6 +87,11 @@ export const piEsperada = (e: Enlace, q: ParamsDAOA2): number => (100 * (q.W - e
 export const pendientePhillips = (e: Enlace, q: ParamsDAOA2): number => q.Yp / (q.sigma * e.P0 * e.okun);
 export const cpcp = (e: Enlace, q: ParamsDAOA2, u: number): number =>
   piEsperada(e, q) - pendientePhillips(e, q) * (u - e.ustar);
+/** Enlace de un período cuyo precio anterior es P (en el largo plazo, P₋₁ = P de E₂). */
+export const enlaceDesde = (e: Enlace, P: number): Enlace => ({ ...e, P0: P });
+/** Inflación de cada período de la autocorrección: el primero respecto a E₀, los demás respecto al anterior. */
+export const inflacionCamino = (e: Enlace, camino: PuntoDAOA[]): number[] =>
+  camino.map((x, t) => inflacionDe(enlaceDesde(e, t === 0 ? e.P0 : camino[t - 1].P), x.P));
 
 export interface PasosDAOA {
   e0: PuntoDAOA;
@@ -132,9 +139,12 @@ export function calcular(p: P): Simulacion {
   const u2 = q2 && e2 ? desempleo(enlace, q2, e2.Y) : null;
   const pi0 = inflacionDe(enlace, e0.P);
   const pi1 = inflacionDe(enlace, e1.P);
-  const pi2 = e2 ? inflacionDe(enlace, e2.P) : null;
+  // Largo plazo: el precio ya no cambia (P₋₁ = P de E₂) ⇒ π = 0.
+  const enlace2 = e2 ? enlaceDesde(enlace, e2.P) : null;
+  const pi2 = e2 && enlace2 ? inflacionDe(enlace2, e2.P) : null;
+  const piCamino = inflacionCamino(enlace, camino);
   const us = [u0, u1, ...(u2 !== null ? [u2] : [])];
-  const pis = [pi0, pi1, ...(pi2 !== null ? [pi2] : [])];
+  const pis = [pi0, pi1, ...(pi2 !== null ? [pi2] : []), ...piCamino];
   const umax = Math.min(60, Math.max(p.ustar * 2.2, ...us.map((u) => u * 1.25), 10));
   const pimin = Math.min(-5, ...pis) - 4;
   const pimax = Math.max(5, ...pis) + 4;
@@ -153,7 +163,7 @@ export function calcular(p: P): Simulacion {
     id: '2',
     titulo: 'B · Curva de Phillips (vía ley de Okun)',
     tituloX: 'Desempleo u (%)',
-    tituloY: 'Inflación π desde E₀ (%)',
+    tituloY: 'Inflación del período π (%)',
     rangoX: [0, umax],
     rangoY: [pimin, pimax],
     dominio: { x: [0.56, 1], y: [0, 0.93] },
@@ -214,18 +224,19 @@ export function calcular(p: P): Simulacion {
   // ---------- Panel B: Phillips de corto plazo (una por cada OACP) y CPLP vertical en u*
   const uu = linspace(0, umax, 80);
   const clip = (v: number) => (v >= pimin - 50 && v <= pimax + 50 ? v : null);
-  const trazarCP = (q: ParamsDAOA2, et: string, color: string, estado: Estado) =>
-    curvaP(fig, B, uu, uu.map((u) => clip(cpcp(enlace, q, u))), `CPCP (πᵉ = ${fmt(piEsperada(enlace, q), 2)} %)`, color, estado, et);
+  const trazarCP = (q: ParamsDAOA2, et: string, color: string, estado: Estado, en: Enlace = enlace) =>
+    curvaP(fig, B, uu, uu.map((u) => clip(cpcp(en, q, u))), `CPCP (πᵉ = ${fmt(piEsperada(en, q), 2)} %)`, color, estado, et);
   const cpCambia = choqueOA;
   if (cpCambia) trazarCP(b, 'CPCP₀', AZUL, 'inicial');
   trazarCP(n, cpCambia ? 'CPCP₁' : 'CPCP', cpCambia ? MORADO : AZUL, oaFinal ? 'intermedio' : 'final');
-  if (oaFinal && q2) trazarCP(q2, 'CPCP₂', DORADO, 'final');
+  // Largo plazo: con precios estables πᵉ vuelve a 0 y la CPCP₂ pasa por (u*, 0).
+  if (oaFinal && q2 && enlace2) trazarCP(q2, 'CPCP₂', DORADO, 'final', enlace2);
   curvaP(fig, B, [p.ustar, p.ustar], [pimin, pimax], 'CPLP (NAIRU u*)', NARANJA, 'final', 'CPLP');
   if (auto && camino.length > 1)
     fig.data.push({
       type: 'scatter',
       x: camino.map((e) => Math.max(0, desempleo(enlace, n, e.Y))),
-      y: camino.map((e) => inflacionDe(enlace, e.P)),
+      y: piCamino,
       xaxis: 'x2',
       yaxis: 'y2',
       mode: 'lines+markers',
@@ -280,8 +291,9 @@ export function calcular(p: P): Simulacion {
     );
   lecturas.push(
     texto(
-      `Enlace entre paneles: π se mide respecto a P de E₀ y u sale de la ley de Okun (ω = ${fmt(p.okun, 2)}). ` +
-        `Así la OACP vigente se traduce en una CPCP con pendiente β = Yₚ/(σ·P₀·ω) = ${fmt(pendientePhillips(enlace, n), 3)}.`,
+      `Enlace entre paneles: π es la inflación de cada período (E₁ respecto a E₀) y u sale de la ley de Okun (ω = ${fmt(p.okun, 2)}). ` +
+        `Así la OACP vigente se traduce en una CPCP con pendiente β = Yₚ/(σ·P₀·ω) = ${fmt(pendientePhillips(enlace, n), 3)}. ` +
+        'En el largo plazo el nivel de precios ya no cambia: E₂ queda en u = u* con π = 0. Un choque único deja precios más altos (o más bajos), no inflación permanente.',
       'pequeno texto-suave',
     ),
   );
@@ -291,7 +303,8 @@ export function calcular(p: P): Simulacion {
     ['Nivel de precios P', e0.P, e1.P, e2?.P ?? null],
     ['Brecha Y − Yₚ', delta(e0.Y - b.Yp), delta(brecha), e2 ? 0 : null],
     ['Desempleo u (%)', u0, u1, u2],
-    ['Inflación π desde E₀ (%)', pi0, pi1, pi2],
+    ['Inflación del período π (%)', pi0, pi1, pi2],
+    ['Variación de P desde E₀ (%)', 0, inflacionDe(enlace, e1.P), e2 ? inflacionDe(enlace, e2.P) : null],
   ];
   const bloques: Bloque[] = [];
   if (choque) bloques.push(cadenaDAOA(p, s));
