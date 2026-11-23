@@ -108,6 +108,19 @@ function vistaRiesgo(p: P): Simulacion {
   // se monten, y la lectura del eje vertical (UE) se muestra una sola vez.
   equilibrioP(fig, G, r.VE, r.UE, 'Lotería: (valor esperado, utilidad esperada)', 'VE', MORADO, { simbolo: 'diamond', posicion: 'top right' });
   equilibrioP(fig, G, r.EC, r.UE, 'Equivalente cierto', 'EC', DORADO, { simbolo: 'square', lecturas: false, posicion: 'top left' });
+  // Revisión 2026-11: desigualdad de Jensen. Con aversión (r < 1) u(VE) > UE: la curva pasa por encima de la cuerda.
+  const uVE = utilidad(p.r, r.VE);
+  if (Math.abs(uVE - r.UE) > 1e-9) {
+    fig.data.push({
+      type: 'scatter', x: [r.VE, r.VE], y: [r.UE, uVE], mode: 'lines',
+      name: `Brecha de Jensen u(VE) − UE = ${fmt(uVE - r.UE, 3)}`, line: { color: VERDE, width: 3 }, hoverinfo: 'name',
+    });
+    fig.data.push({
+      type: 'scatter', x: [r.VE], y: [uVE], mode: 'markers+text', text: ['u(VE)'], textposition: uVE > r.UE ? 'top left' : 'bottom right',
+      name: 'Utilidad del valor esperado u(VE)', marker: { color: VERDE, size: 9 }, textfont: { color: VERDE },
+      hovertemplate: 'u(VE) = %{y:.3f}<extra></extra>',
+    });
+  }
   fig.layout.annotations.push({
     x: r.EC, y: 0, xref: 'x', yref: 'y domain', yanchor: 'bottom', text: fmt(r.EC, 2), showarrow: false,
     font: { size: 10, color: DORADO }, bgcolor: COLORES.panel, xshift: r.EC < r.VE ? -14 : 14,

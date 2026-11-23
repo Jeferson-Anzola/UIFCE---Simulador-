@@ -55,6 +55,11 @@ function hotelling(p: P): Simulacion {
     type: 'scatter', x: [0, lx], y: [0, (p.w / p.pp) * lx], mode: 'lines', name: 'Isobeneficio π = 0',
     line: { color: MORADO, width: 1.5, dash: 'dot' },
   });
+  // Revisión 2026-11: proyecciones del óptimo a los ejes para leer x* y y*.
+  fig.data.push({
+    type: 'scatter', x: [r.x, r.x, null, r.x, 0], y: [0, r.y, null, r.y, r.y], mode: 'lines', showlegend: false,
+    hoverinfo: 'skip', line: { color: ACENTO, width: 1.1, dash: 'dot' },
+  });
   punto(fig, r.x, r.y, 'Óptimo (x*, y*)', ACENTO, undefined, 'x*');
   punto(fig, 0, r.pi / p.pp, 'Intercepto π*/p', ROJO, 'diamond', 'π/p');
   const panel = [

@@ -105,6 +105,24 @@ export function calcular(p: P): Simulacion {
   equilibrioP(fig, G, A.x, A.y, 'A · cesta inicial', 'A', AZUL, { decX: 3, decY: 3 });
   equilibrioP(fig, G, B.x, B.y, 'B · cesta compensada', 'B', VERDE, { decX: 3, decY: 3, simbolo: 'square' });
   equilibrioP(fig, G, C.x, C.y, 'C · cesta final', 'C', ROJO, { decX: 3, decY: 3, simbolo: 'diamond' });
+  // Revisión 2026-11: con la compensación de Slutsky se marca también la cesta de Hicks (misma utilidad que A) para
+  // ver la sobrecompensación: B alcanza una curva más alta que A (Varian, «La ecuación de Slutsky»).
+  let hicksB: { x: number; y: number } | null = null;
+  if (p.metodo === 'slutsky' && Math.abs(p.p1n - p.p1) > 1e-12) {
+    try {
+      const h = descomposicion(u, p.p1, p.p2, p.m, p.p1n, 'hicks').B;
+      if (Number.isFinite(h.x) && Number.isFinite(h.y)) hicksB = { x: h.x, y: h.y };
+    } catch (e) {
+      if (!(e instanceof ErrorParametro)) throw e;
+    }
+  }
+  if (hicksB) {
+    fig.data.push({
+      type: 'scatter', x: [hicksB.x], y: [hicksB.y], mode: 'markers+text', text: ['Bᴴ'], textposition: 'bottom left',
+      name: 'Bᴴ · cesta de Hicks (misma utilidad que A)', marker: { color: MORADO, size: 10, symbol: 'square-open', line: { width: 2 } },
+      textfont: { color: MORADO }, hovertemplate: 'Bᴴ (Hicks): x₁ = %{x:.3f}, x₂ = %{y:.3f}<extra></extra>',
+    });
+  }
   // Flechas de los efectos sobre x₁, cerca del eje: sustitución A → B, ingreso B → C.
   const yS = ly * 0.1;
   const yI = ly * 0.17;
@@ -150,6 +168,14 @@ export function calcular(p: P): Simulacion {
       'pequeno texto-suave',
     ),
   ];
+  if (hicksB)
+    lecturas.push(
+      texto(
+        `Slutsky sobrecompensa: con m′ el consumidor puede comprar A y alcanza u(B) = ${fmt(u.U(B.x, B.y), 3)} > u(A) = ${fmt(d.U0, 3)}. ` +
+          `La cesta de Hicks Bᴴ mantiene u(A) y su efecto sustitución es ${fmt(hicksB.x - A.x, 4)} frente a ${fmt(es[0], 4)} con Slutsky.`,
+        'pequeno texto-suave',
+      ),
+    );
   if (p.caso !== 'normal' && NOMBRE_CASO[p.caso] !== undefined && d.clasificacion_x !== p.caso && d.clasificacion_x !== 'sin_cambio')
     lecturas.push(aviso(`Con estos valores el bien ya no se comporta como «${NOMBRE_CASO[p.caso]}»: es ${d.clasificacion_x}.`));
   const panel = [
@@ -173,6 +199,7 @@ export function calcular(p: P): Simulacion {
             [p.metodo === 'hicks' ? 'B (p₁′, misma utilidad)' : 'B (p₁′, m′)', B.x, B.y],
             ['C (p₁′, m)', C.x, C.y],
             ["Renta compensada m′", d.M_compensado, null],
+            ...(hicksB ? [['Bᴴ (p₁′, misma utilidad que A)', hicksB.x, hicksB.y] as (string | number | null)[]] : []),
           ],
           ['', 'x₁', 'x₂'],
         ),
