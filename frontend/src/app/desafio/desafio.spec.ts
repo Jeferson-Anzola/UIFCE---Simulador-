@@ -49,8 +49,8 @@ describe('Banco de retos', () => {
     }
   });
 
-  it('Fundamentos y Macro 1 tienen retos en todos sus simuladores', () => {
-    for (const materia of ['fundamentos', 'macro1'])
+  it('todos los simuladores de todas las materias tienen sus tres retos', () => {
+    for (const materia of Object.keys(CARGADORES))
       for (const sim of Object.keys(CARGADORES[materia])) expect(retosDe(materia, sim).length, `${materia}/${sim}`).toBe(3);
   });
 

@@ -209,7 +209,7 @@ export class DesafioPage {
   }
 
   protected valor(v: number | null, o: Objetivo): string {
-    return v === null ? 'sin equilibrio' : fmt(v, o.decimales ?? 2);
+    return v === null ? 'no definido' : fmt(v, o.decimales ?? 2);
   }
 
   private pendiente: Params | null = null;

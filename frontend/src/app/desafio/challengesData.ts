@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Banco de retos del Modo Desafío (tres por modelo) para Micro 2 (Varian), Micro 3 y Macro 2; los de
- * Fundamentos y Macro 1 viven en retosFundamentosMacro1.ts y se suman aquí.
+ * Fundamentos y Macro 1 viven en retosFundamentosMacro1.ts, y los de Micro 1 y los
+ * simuladores restantes en retosMicro1Resto.ts; todos se suman aquí.
  *
  * Cada `medir` usa las funciones del modelo que dibujan la gráfica, y `solucion` es una combinación
  * de deslizadores (dentro de su rango y sobre su paso) que cumple la meta con ±1,5 %. Las pruebas de
@@ -23,6 +24,7 @@ import { escenarios as escPhillips } from '../macro2/simuladores/phillips';
 import { escenarios as escSolow } from '../macro2/simuladores/solow';
 import { Reto } from './motor';
 import { RETOS_FUNDAMENTOS_MACRO1 } from './retosFundamentosMacro1';
+import { RETOS_MICRO1_RESTO } from './retosMicro1Resto';
 
 const n = (p: Params, k: string): number => Number(p[k]);
 
@@ -553,7 +555,7 @@ const MACRO2: Reto[] = [
 ];
 
 /** Banco completo de retos (tres por modelo). */
-export const CHALLENGES: Reto[] = [...RETOS_FUNDAMENTOS_MACRO1, ...MICRO2, ...MICRO3, ...MACRO2];
+export const CHALLENGES: Reto[] = [...RETOS_FUNDAMENTOS_MACRO1, ...RETOS_MICRO1_RESTO, ...MICRO2, ...MICRO3, ...MACRO2];
 
 export const retosDe = (materia: string, sim: string): Reto[] =>
   CHALLENGES.filter((r) => r.materia === materia && r.sim === sim);
