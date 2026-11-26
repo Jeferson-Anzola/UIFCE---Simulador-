@@ -27,6 +27,7 @@ import {
   validarDAOA,
 } from '../modelos/daoa';
 import { GRUPOS_BIENES, ref } from './_comun';
+import { guiasEjes } from '../../core/marcadores';
 
 const SIM_ID = 'da-oa';
 // DA: Y = (340 + 0.5·M/P)/0.55. Con M = 400 y Ȳₙ = 1,000 el precio de mediano plazo es 200/210 = 0.952.
@@ -204,6 +205,8 @@ export function calcular(p: P): Simulacion {
       marker: { size: 5, color: DORADO },
       hovertemplate: 'Y = %{x:.2f}<br>P = %{y:.4f}<extra></extra>',
     });
+  guiasEjes(fig, inicial.Y, inicial.P, { rotuloX: 'Y₀', rotuloY: 'P₀', decY: 3 });
+  if (choqueDA || choqueOA) guiasEjes(fig, final.Y, final.P, { rotuloX: 'Y₂', rotuloY: 'P₂', decY: 3 });
   punto(fig, inicial.Y, inicial.P, 'Mediano plazo inicial', undefined, undefined, 'E₀');
   if (choqueDA || choqueOA) {
     punto(fig, impacto.Y, impacto.P, 'Corto plazo (impacto)', VERDE, 'square', 'E₁');

@@ -18,6 +18,7 @@ import {
 } from '../../core/tema';
 import { ParamsKeynes, ResKeynes, demandaKeynes, equilibrioKeynes } from '../modelos/keynesiano';
 import { delta, ref } from './_comun';
+import { guiasEjes } from '../../core/marcadores';
 
 const SIM_ID = 'keynesiano';
 // Multiplicador 1/(1 − 0.6·0.75) = 1.818; ΔG = 50 sube el producto en 90.9.
@@ -73,16 +74,8 @@ export function calcular(p: P): Simulacion {
       name: 'Z después del choque',
       line: { color: VERDE, width: 3 },
     });
-  for (const r of hayChoque ? [r0, r1] : [r0])
-    fig.data.push({
-      type: 'scatter',
-      x: [r.Y, r.Y],
-      y: [0, r.Y],
-      mode: 'lines',
-      showlegend: false,
-      line: { color: SUAVE, dash: 'dot', width: 1.2 },
-      hoverinfo: 'skip',
-    });
+  guiasEjes(fig, r0.Y, r0.Y, { rotuloX: hayChoque ? 'Y₀' : 'Y*' });
+  if (hayChoque) guiasEjes(fig, r1.Y, r1.Y, { rotuloX: 'Y₁' });
   punto(fig, r0.Y, r0.Y, 'Equilibrio inicial', undefined, undefined, 'E₀');
   if (hayChoque) punto(fig, r1.Y, r1.Y, 'Equilibrio final', DORADO, 'diamond', 'E₁');
 

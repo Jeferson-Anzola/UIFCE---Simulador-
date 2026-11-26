@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Bloque, Figura } from './tipos';
+import { estiloMarcador, estiloTexto, halo } from './marcadores';
 
 export const COLORES = {
   fondo: '#171b22', // fondo del papel de Plotly = color de la tarjeta
@@ -153,7 +154,10 @@ export function figuraVacia(mensaje = ''): Figura {
   return { data: [], layout };
 }
 
-/** Marcador destacado (equivale a _ui.punto). */
+/**
+ * Marcador destacado (equivale a _ui.punto). Usa el estilo común de core/marcadores: punto grande con
+ * borde de contraste, halo translúcido detrás y etiqueta en negrita con sombra.
+ */
 export function punto(
   fig: Figura,
   x: number,
@@ -172,11 +176,12 @@ export function punto(
     name: nombre,
     text: texto ? [texto] : undefined,
     textposition: 'top right',
-    textfont: { color },
-    marker: { size: 12, color, symbol: simbolo, line: { width: 2, color: COLORES.fondo } },
+    textfont: estiloTexto(color),
+    marker: estiloMarcador(color, simbolo),
     hovertemplate: `${nombre}<br>%{x:.3f}, %{y:.3f}<extra></extra>`,
     ...extra,
   });
+  if (!/-open/.test(simbolo)) halo(fig, x, y, color, extra.xaxis ?? 'x', extra.yaxis ?? 'y');
 }
 
 /* ---- constructores de bloques de resultados (equivalen a _ui.tabla, aviso...) ---- */

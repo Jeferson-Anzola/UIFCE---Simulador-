@@ -32,6 +32,9 @@
             <span class="racha" title="Retos nuevos resueltos seguidos sin fallar">
               <span aria-hidden="true">🔥</span> Racha {{ progreso().racha }}
             </span>
+            <span class="puntaje" title="Básico 10 · Intermedio 20 · Avanzado 30 puntos">
+              <span aria-hidden="true">⭐</span> {{ puntos() }} pts
+            </span>
           </div>
           <a class="boton-volver" [routerLink]="['/', m.id, s.id]">← Volver al Simulador</a>
         </header>
@@ -57,13 +60,19 @@
               <h2>{{ r.titulo }}</h2>
               <p class="enunciado">{{ r.enunciado }}</p>
               <ul class="metas">
-                @for (o of r.objetivos; track o.etiqueta) {
+                @for (o of r.objetivos; track o.etiqueta; let j = $index) {
                   <li>
                     <span class="texto-suave">{{ o.etiqueta }}</span> = <strong>{{ meta(o) }}</strong>
                     <span class="texto-suave pequeno">({{ tolerancia }})</span>
+                    @if (enVivo()?.mediciones?.[j]; as x) {
+                      <span class="en-vivo" [class.cerca]="x.ok" aria-live="polite">
+                        Ahora: {{ valor(x.valor, o) }} {{ x.ok ? '✓' : '' }}
+                      </span>
+                    }
                   </li>
                 }
               </ul>
+              <p class="pequeno texto-suave">Vale {{ puntosReto() }} puntos · el valor «Ahora» se recalcula con el modelo exacto mientras mueves los controles.</p>
             </section>
 
             <section class="panel">
@@ -85,8 +94,11 @@
             @if (veredicto(); as v) {
               @if (v.ok) {
                 <section class="banner exito" role="status">
-                  <strong>¡Reto superado!</strong>
+                  <strong>¡Reto superado! +{{ puntosReto() }} pts</strong>
                   <p>{{ r.explicacion }}</p>
+                  @for (l of nuevosLogros(); track l) {
+                    <p class="logro-nuevo">Logro desbloqueado: {{ l }}</p>
+                  }
                   @if (indice() < retos().length - 1) {
                     <button type="button" class="boton-secundario" (click)="irA(indice() + 1)">Siguiente reto →</button>
                   } @else if (resueltosModelo() === retos().length) {
@@ -105,6 +117,17 @@
                 </section>
               }
             }
+            <details class="panel logros">
+              <summary>Logros {{ logrosObtenidos() }}/{{ logros().length }}</summary>
+              <ul>
+                @for (l of logros(); track l.id) {
+                  <li [class.logrado]="l.logrado">
+                    <span aria-hidden="true">{{ l.logrado ? l.icono : '🔒' }}</span>
+                    <strong>{{ l.titulo }}</strong> <span class="texto-suave pequeno">{{ l.descripcion }}</span>
+                  </li>
+                }
+              </ul>
+            </details>
           </aside>
 
           <section class="panel panel-grafica">

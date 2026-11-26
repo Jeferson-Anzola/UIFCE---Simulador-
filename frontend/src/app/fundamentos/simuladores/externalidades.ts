@@ -96,7 +96,7 @@ function calcularSim(p: P): Simulacion {
       });
   }
   punto(fig, r.qMercado, r.pMercado, 'Equilibrio de mercado', undefined, undefined, 1, 'Mercado');
-  guias(fig, r.qOptimo, r.pOptimo);
+  guias(fig, r.qOptimo, r.pOptimo, 1, ['Q óptima', 'P óptimo']);
   punto(fig, r.qOptimo, r.pOptimo, 'Óptimo social', COLOR.nuevo, 'star', 1, 'Óptimo');
   if (Math.abs(intervencion) > 1e-12)
     punto(fig, r.q, r.pc, 'Con la intervención', COLOR.social, 'diamond');

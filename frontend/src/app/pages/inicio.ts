@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 import { CREADOR, MATERIAS, TITULO_APP, VERSION } from '../core/catalogo';
 import { Figura } from '../core/tipos';
 import { ACENTO, COLORES, layoutBase } from '../core/tema';
+import { estiloMarcador } from '../core/marcadores';
 import { linspace } from '../core/numerico';
 import { PlotlyChart } from '../shared/plotly-chart';
 import { Apariencia } from '../core/apariencia';
@@ -26,7 +27,7 @@ export function figuraPortada(desplazamiento = 0): Figura {
       { type: 'scatter', x: q, y: q.map((v) => c + d * v), name: 'Oferta', mode: 'lines', line: { width: 3, color: '#5B9BFF' }, hovertemplate: 'Q = %{x:.0f}<br>P = %{y:.1f}<extra>Oferta</extra>' },
       { type: 'scatter', x: q, y: q.map((v) => a - b * v), name: 'Demanda', mode: 'lines', line: { width: 3, color: '#FF7A85' }, hovertemplate: 'Q = %{x:.0f}<br>P = %{y:.1f}<extra>Demanda</extra>' },
       { type: 'scatter', x: [qEq, qEq, 0], y: [0, pEq, pEq], mode: 'lines', line: { dash: 'dot', width: 1.5, color: COLORES.textoSuave }, hoverinfo: 'skip', showlegend: false },
-      { type: 'scatter', x: [qEq], y: [pEq], name: 'Equilibrio', mode: 'markers', marker: { size: 13, color: ACENTO, line: { width: 2, color: COLORES.fondo } }, hovertemplate: 'Q* = %{x:.1f}<br>P* = %{y:.1f}<extra>Equilibrio</extra>' },
+      { type: 'scatter', x: [qEq], y: [pEq], name: 'Equilibrio', mode: 'markers', marker: estiloMarcador(ACENTO), hovertemplate: 'Q* = %{x:.1f}<br>P* = %{y:.1f}<extra>Equilibrio</extra>' },
     ],
   };
 }

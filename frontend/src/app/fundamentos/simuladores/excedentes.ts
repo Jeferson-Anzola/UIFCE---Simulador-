@@ -85,7 +85,7 @@ function continuo(p: P): Simulacion {
   lineaCurva(fig, S, xMax, yMax, 'Oferta', COLOR.oferta);
   const bloques: Bloque[] = [];
   if (r.intercambio) {
-    guias(fig, r.q, r.p);
+    guias(fig, r.q, r.p, 1, ['Q*', 'P*']);
     punto(fig, r.q, r.p, 'Equilibrio', undefined, undefined, 1, 'E');
   } else bloques.push(aviso('Sin intercambio no hay excedentes.', 'info'));
   if (D.esVertical && r.intercambio)

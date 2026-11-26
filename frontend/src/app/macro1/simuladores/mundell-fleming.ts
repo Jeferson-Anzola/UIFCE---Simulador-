@@ -28,6 +28,7 @@ import {
   paridad,
 } from '../modelos/mundell';
 import { delta, ref } from './_comun';
+import { guiasEjes } from '../../core/marcadores';
 
 const SIM_ID = 'mundell-fleming';
 // Calibrado para que el punto de partida sea el mismo en ambos regímenes: Y = 1,000, i = i* = 5 %, e = 1.
@@ -194,6 +195,8 @@ export function calcular(p: P): Simulacion {
       name: 'i* después del choque',
       line: { color: SUAVE, width: 1.5, dash: 'dashdot' },
     });
+  guiasEjes(fig, r0.Y, r0.i, { rotuloX: hayChoque ? 'Y₀' : 'Y', rotuloY: hayChoque ? 'i₀' : 'i', decY: 2 });
+  if (hayChoque) guiasEjes(fig, r1.Y, r1.i, { rotuloX: 'Y₁', rotuloY: 'i₁', decY: 2 });
   punto(fig, r0.Y, r0.i, 'Equilibrio inicial', undefined, undefined, 'E₀');
   if (hayChoque) punto(fig, r1.Y, r1.i, 'Equilibrio final', DORADO, 'diamond', 'E₁');
 

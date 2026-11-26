@@ -12,6 +12,7 @@
 import { Bloque, Figura, GrupoControles, Params } from '../../core/tipos';
 import { COLORES, SUAVE, layoutBase } from '../../core/tema';
 import { fmt } from '../../core/formato';
+import { MARCADOR, estiloMarcador, estiloTexto, halo } from '../../core/marcadores';
 import { FANTASMA } from './_comun';
 
 export type IdPanel = '' | '2' | '3' | '4' | '5';
@@ -155,7 +156,7 @@ export function equilibrioP(
     mode: 'lines',
     showlegend: false,
     hoverinfo: 'skip',
-    line: { color, width: 1.1, dash: 'dot' },
+    line: { color, width: MARCADOR.guia, dash: 'dot' },
   });
   fig.data.push({
     type: 'scatter',
@@ -167,12 +168,13 @@ export function equilibrioP(
     name: nombre,
     text: [etiqueta],
     textposition: op.posicion ?? 'top left',
-    textfont: { color, size: 12 },
-    marker: { size: 11, color, symbol: op.simbolo ?? 'circle', line: { width: 2, color: COLORES.fondo } },
+    textfont: estiloTexto(color, MARCADOR.fuente - 1),
+    marker: estiloMarcador(color, op.simbolo ?? 'circle', MARCADOR.tamano - 2),
     hovertemplate: `${nombre}<br>(%{x:.${op.decX ?? 2}f}, %{y:.${op.decY ?? 2}f})<extra></extra>`,
   });
+  if (!/-open/.test(op.simbolo ?? '')) halo(fig, x, y, color, ejeX(p), ejeY(p));
   if (op.lecturas === false) return;
-  const fuente = { size: 10, color };
+  const fuente = { size: MARCADOR.fuenteEje - 1, color, weight: 700 };
   fig.layout.annotations.push(
     {
       x,

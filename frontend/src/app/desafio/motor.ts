@@ -9,6 +9,7 @@
  */
 import { ErrorParametro } from '../core/errores';
 import { ACENTO } from '../core/tema';
+import { MARCADOR, estiloMarcador } from '../core/marcadores';
 import { Figura, Params } from '../core/tipos';
 
 /** Tolerancia relativa de «Verificar Solución» (±1,5 % del valor objetivo). */
@@ -35,7 +36,7 @@ export interface Objetivo {
 
 export interface Reto {
   id: string;
-  materia: 'micro2' | 'micro3' | 'macro2';
+  materia: 'fundamentos' | 'macro1' | 'micro2' | 'micro3' | 'macro2';
   sim: string;
   dificultad: Dificultad;
   titulo: string;
@@ -166,7 +167,7 @@ export function figuraDesafio(actual: Figura, inicial: Figura | null, reto: Reto
         xaxis: `x${panel}`,
         yaxis: `y${panel}`,
         mode: 'markers',
-        marker: { size: 22, symbol: 'circle-open', color: ACENTO, line: { width: 2.5, color: ACENTO } },
+        marker: estiloMarcador(ACENTO, 'circle-open-dot', MARCADOR.tamano + 13),
         name: 'Objetivo',
         showlegend: false,
         hovertemplate: `Objetivo<br>${x.etiqueta} = %{x}<br>${y.etiqueta} = %{y}<extra></extra>`,
@@ -227,4 +228,45 @@ export function registrarIntento(p: Progreso, retoId: string, ok: boolean): Prog
   if (p.resueltos[retoId]) return p;
   const racha = p.racha + 1;
   return { resueltos: { ...p.resueltos, [retoId]: true }, racha, mejorRacha: Math.max(p.mejorRacha, racha) };
+}
+
+/* ------------------------------------------------------------------ puntaje y logros */
+
+/** Puntos por reto resuelto según su dificultad. */
+export const PUNTOS: Readonly<Record<Dificultad, number>> = { Básico: 10, Intermedio: 20, Avanzado: 30 };
+
+/** Puntaje acumulado: suma de los puntos de cada reto resuelto que siga en el banco. */
+export function puntaje(p: Progreso, retos: readonly Reto[]): number {
+  return retos.reduce((t, r) => t + (p.resueltos[r.id] ? PUNTOS[r.dificultad] : 0), 0);
+}
+
+export interface Logro {
+  id: string;
+  icono: string;
+  titulo: string;
+  descripcion: string;
+  logrado: boolean;
+}
+
+/** Logros que se desbloquean con el progreso guardado (función pura, sin estado propio). */
+export function logros(p: Progreso, retos: readonly Reto[]): Logro[] {
+  const hechos = retos.filter((r) => p.resueltos[r.id]);
+  const grupos = (clave: (r: Reto) => string) => {
+    const m = new Map<string, Reto[]>();
+    for (const r of retos) m.set(clave(r), [...(m.get(clave(r)) ?? []), r]);
+    return [...m.values()];
+  };
+  const completo = (rs: Reto[]) => rs.every((r) => p.resueltos[r.id]);
+  const pts = puntaje(p, retos);
+  const l = (id: string, icono: string, titulo: string, descripcion: string, logrado: boolean): Logro => ({
+    id, icono, titulo, descripcion, logrado,
+  });
+  return [
+    l('primer-reto', '🎯', 'Primer acierto', 'Resuelve tu primer reto.', hechos.length >= 1),
+    l('racha-3', '🔥', 'En racha', 'Resuelve 3 retos nuevos seguidos sin fallar.', p.mejorRacha >= 3),
+    l('avanzado', '🧠', 'Nivel avanzado', 'Resuelve un reto de dificultad Avanzado.', hechos.some((r) => r.dificultad === 'Avanzado')),
+    l('modelo', '🏅', 'Modelo dominado', 'Resuelve los tres retos de un mismo modelo.', grupos((r) => `${r.materia}/${r.sim}`).some(completo)),
+    l('cien', '💯', '100 puntos', 'Acumula 100 puntos.', pts >= 100),
+    l('materia', '🏆', 'Materia completa', 'Resuelve todos los retos de una materia.', grupos((r) => r.materia).some(completo)),
+  ];
 }

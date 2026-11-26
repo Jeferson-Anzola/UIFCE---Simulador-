@@ -93,7 +93,7 @@ function calcularSim(p: P): Simulacion {
   if (!D1.igual(D0)) lineaCurva(fig, D1, xMax, yMax, 'Demanda nueva', COLOR.demanda);
   if (!S1.igual(S0)) lineaCurva(fig, S1, xMax, yMax, 'Oferta nueva', COLOR.oferta);
   if (e0.intercambio) {
-    guias(fig, e0.q, e0.p);
+    guias(fig, e0.q, e0.p, 1, hayCambio ? ['Q₀', 'P₀'] : ['Q*', 'P*']);
     punto(
       fig,
       e0.q,
@@ -106,7 +106,7 @@ function calcularSim(p: P): Simulacion {
     );
   }
   if (hayCambio && e1.intercambio) {
-    guias(fig, e1.q, e1.p);
+    guias(fig, e1.q, e1.p, 1, ['Q₁', 'P₁']);
     punto(fig, e1.q, e1.p, 'Equilibrio nuevo', COLOR.nuevo, 'diamond', 1, 'E₁');
   }
 

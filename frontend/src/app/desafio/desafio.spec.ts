@@ -16,7 +16,9 @@ import {
   estadoInicial,
   figuraDesafio,
   leerProgreso,
+  logros,
   progresoVacio,
+  puntaje,
   registrarIntento,
   sanear,
   verificar,
@@ -37,6 +39,19 @@ describe('Banco de retos', () => {
       expect(mat && buscarSimulador(mat, sim)?.listo, m).toBe(true);
       expect(CARGADORES[materia]?.[sim], m).toBeTypeOf('function');
     }
+  });
+
+  it('cada modelo tiene un reto Básico, uno Intermedio y uno Avanzado, en ese orden', () => {
+    const modelos = new Set(CHALLENGES.map((r) => `${r.materia}/${r.sim}`));
+    for (const m of modelos) {
+      const [materia, sim] = m.split('/');
+      expect(retosDe(materia, sim).map((r) => r.dificultad), m).toEqual(['Básico', 'Intermedio', 'Avanzado']);
+    }
+  });
+
+  it('Fundamentos y Macro 1 tienen retos en todos sus simuladores', () => {
+    for (const materia of ['fundamentos', 'macro1'])
+      for (const sim of Object.keys(CARGADORES[materia])) expect(retosDe(materia, sim).length, `${materia}/${sim}`).toBe(3);
   });
 
   it('el índice liviano de la barra superior coincide con el banco', () => {
@@ -130,6 +145,22 @@ describe('Motor', () => {
     expect(p.racha).toBe(0);
     expect(p.mejorRacha).toBe(2);
     expect(Object.keys(p.resueltos)).toEqual(['a', 'b']);
+  });
+
+  it('puntaje por dificultad y logros', () => {
+    let p = progresoVacio();
+    expect(puntaje(p, CHALLENGES)).toBe(0);
+    expect(logros(p, CHALLENGES).every((l) => !l.logrado)).toBe(true);
+    for (const r of CHALLENGES.filter((x) => x.materia === 'macro1' && x.sim === 'keynesiano')) p = registrarIntento(p, r.id, true);
+    expect(puntaje(p, CHALLENGES)).toBe(10 + 20 + 30);
+    const hechos = logros(p, CHALLENGES).filter((l) => l.logrado).map((l) => l.id);
+    expect(hechos.sort()).toEqual(['avanzado', 'modelo', 'primer-reto', 'racha-3']);
+    p = registrarIntento(p, 'f-od-2', true);
+    p = registrarIntento(p, 'f-impuestos-3', true);
+    expect(puntaje(p, CHALLENGES)).toBe(110);
+    expect(logros(p, CHALLENGES).find((l) => l.id === 'cien')!.logrado).toBe(true);
+    // Un id que ya no existe en el banco no suma.
+    expect(puntaje({ ...p, resueltos: { ...p.resueltos, viejo: true } }, CHALLENGES)).toBe(110);
   });
 
   it('progreso corrupto o sin almacenamiento no rompe nada', () => {

@@ -20,6 +20,7 @@ import {
 } from '../../core/tema';
 import { ModoLM, ParamsISLM, ResISLM, curvaIS, equilibrioISLM } from '../modelos/islm';
 import { GRUPOS_BIENES, delta, ref } from './_comun';
+import { guiasEjes } from '../../core/marcadores';
 
 const SIM_ID = 'is-lm';
 // IS: Y = (340 − 10·i)/0.3. Con ī = 5 %: Y = 966.7; ΔG = 50 lo lleva a 1,133.3.
@@ -173,6 +174,8 @@ export function calcular(p: P): Simulacion {
       line: { color: SUAVE, dash: 'dot', width: 1.2 },
       hoverinfo: 'skip',
     });
+  guiasEjes(fig, r0.Y, r0.i, { rotuloX: hayChoque ? 'Y₀' : 'Y*', rotuloY: hayChoque ? 'i₀' : 'i*', decY: 2 });
+  if (hayChoque) guiasEjes(fig, r1.Y, r1.i, { rotuloX: 'Y₁', rotuloY: 'i₁', decY: 2 });
   punto(fig, r0.Y, r0.i, 'Equilibrio inicial', undefined, undefined, 'E₀');
   if (hayExpulsion)
     punto(fig, ySinExpulsion, r0.i, 'Sin efecto expulsión (i constante)', SUAVE, 'circle-open');

@@ -2,16 +2,17 @@ import { Component, computed, effect, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { map } from 'rxjs';
-import { MACRO2, MICRO2, MICRO3, buscarMateria, buscarSimulador } from '../core/catalogo';
+import { MATERIAS, buscarMateria, buscarSimulador } from '../core/catalogo';
 import { ErrorParametro } from '../core/errores';
 import { fmt } from '../core/formato';
 import { figuraVacia } from '../core/tema';
 import { CARGADORES } from '../core/registro';
 import { Figura, GrupoControles, Params, SimuladorDef } from '../core/tipos';
-import { retosDe } from '../desafio/challengesData';
+import { CHALLENGES, retosDe } from '../desafio/challengesData';
 import { hayDesafio } from '../desafio/indice';
 import {
   Objetivo,
+  PUNTOS,
   Progreso,
   TOLERANCIA,
   Veredicto,
@@ -19,6 +20,8 @@ import {
   figuraDesafio,
   guardarProgreso,
   leerProgreso,
+  logros,
+  puntaje,
   registrarIntento,
   verificar,
 } from '../desafio/motor';
@@ -57,7 +60,7 @@ export class DesafioPage {
     return m ? buscarSimulador(m, this.ids().sim) : undefined;
   });
   /** Selectores de la cabecera: materias con desafío y sus modelos con retos. */
-  protected readonly materias = [MICRO2, MICRO3, MACRO2];
+  protected readonly materias = MATERIAS.filter((m) => m.simuladores.some((x) => hayDesafio(m.id, x.id)));
   protected readonly modelos = computed(() =>
     (this.materia()?.simuladores ?? []).filter((x) => hayDesafio(this.ids().materia, x.id)),
   );
@@ -92,8 +95,13 @@ export class DesafioPage {
     const d = this.def();
     const r = this.reto();
     if (!d || !r) return [];
-    const todos = d.grupos.flatMap((g) => g.controles);
-    return [{ titulo: 'Tus controles', controles: r.controles.map((id) => todos.find((c) => c.id === id)!).filter(Boolean) }];
+    const todos = d.grupos.flatMap((g) => g.controles.map((c) => ({ c, grupo: g.titulo })));
+    const elegidos = r.controles.map((id) => todos.find((x) => x.c.id === id)!).filter(Boolean);
+    // Fuera de su grupo, dos controles con la misma etiqueta (p. ej. «Aumento (+)…» de la demanda y
+    // de la oferta) se confunden: se les antepone el título de su grupo.
+    const repetida = (e: string) => elegidos.filter((x) => x.c.etiqueta === e).length > 1;
+    const controles = elegidos.map(({ c, grupo }) => (repetida(c.etiqueta) ? { ...c, etiqueta: `${grupo}: ${c.etiqueta}` } : c));
+    return [{ titulo: 'Tus controles', controles }];
   });
 
   private readonly figInicial = computed<Figura | null>(() => {
@@ -120,6 +128,26 @@ export class DesafioPage {
   });
 
   protected readonly resueltosModelo = computed(() => this.retos().filter((r) => this.progreso().resueltos[r.id]).length);
+
+  /** Validación en vivo: la misma cuenta exacta de «Verificar», recalculada con cada movimiento. */
+  protected readonly enVivo = computed<Veredicto | null>(() => {
+    const r = this.reto();
+    if (!r || !this.def()) return null;
+    try {
+      return verificar(r, this.params());
+    } catch {
+      return null;
+    }
+  });
+  protected readonly puntos = computed(() => puntaje(this.progreso(), CHALLENGES));
+  protected readonly puntosReto = computed(() => {
+    const r = this.reto();
+    return r ? PUNTOS[r.dificultad] : 0;
+  });
+  protected readonly logros = computed(() => logros(this.progreso(), CHALLENGES));
+  protected readonly logrosObtenidos = computed(() => this.logros().filter((l) => l.logrado).length);
+  /** Logros recién desbloqueados con la última verificación (se anuncian en el banner de éxito). */
+  protected readonly nuevosLogros = signal<string[]>([]);
 
   constructor() {
     effect(() => {
@@ -169,9 +197,11 @@ export class DesafioPage {
     const p = this.pendiente ?? this.params();
     const v = verificar(r, p);
     this.veredicto.set(v);
+    const antes = new Set(this.logros().filter((l) => l.logrado).map((l) => l.id));
     const nuevo = registrarIntento(this.progreso(), r.id, v.ok);
     this.progreso.set(nuevo);
     guardarProgreso(nuevo);
+    this.nuevosLogros.set(logros(nuevo, CHALLENGES).filter((l) => l.logrado && !antes.has(l.id)).map((l) => `${l.icono} ${l.titulo}`));
   }
 
   protected meta(o: Objetivo): string {

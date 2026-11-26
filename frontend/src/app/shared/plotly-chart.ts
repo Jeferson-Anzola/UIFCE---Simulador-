@@ -1,9 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { AfterViewInit, Component, ElementRef, OnDestroy, computed, effect, inject, input, viewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, OnDestroy, computed, effect, inject, input, signal, viewChild } from '@angular/core';
 import { Apariencia } from '../core/apariencia';
 import { traducirAClaro } from '../core/tema';
 import { Figura } from '../core/tipos';
 import { rotularAreas } from './rotulos';
+import { escalarMarcadores, factorPorAncho } from '../core/marcadores';
 
 /** Solo se conserva la cámara (descargar imagen); todo lo demás se maneja con rueda, pellizco y doble clic. */
 const CONFIG = {
@@ -155,6 +156,8 @@ export class PlotlyChart implements AfterViewInit, OnDestroy {
   private cuadro = 0;
   private quitarGestos?: () => void;
   private readonly apariencia = inject(Apariencia);
+  /** Escala de los puntos destacados según el ancho de la gráfica (celular · escritorio · proyector). */
+  private readonly escala = signal(1);
 
   constructor() {
     effect(() => {
@@ -163,21 +166,24 @@ export class PlotlyChart implements AfterViewInit, OnDestroy {
       // El tema forma parte del efecto: al cambiar de modo se redibujan todas las gráficas abiertas.
       const claro = this.apariencia.claro();
       const el = this.cont().nativeElement;
+      const escala = this.escala();
       cargarPlotly().then((P) => {
         if (this.destruido) return;
         this.Plotly = P;
-        const layout = { ...f.layout, autosize: true, height: alto };
+        const fig = escalarMarcadores({ data: f.data, layout: f.layout }, escala);
+        const f2 = { ...f, data: fig.data, layout: fig.layout };
+        const layout = { ...f2.layout, autosize: true, height: alto };
         // Áreas sombreadas sin leyenda (excedentes, pérdida irrecuperable…): se rotulan sobre la gráfica.
-        const rotulos = rotularAreas(f.data, f.layout);
-        if (rotulos.length) layout.annotations = [...(f.layout?.annotations ?? []), ...rotulos];
+        const rotulos = rotularAreas(f2.data, f.layout);
+        if (rotulos.length) layout.annotations = [...(f2.layout?.annotations ?? []), ...rotulos];
         if (f.movil && esMovil()) aplicarMovil(layout, f.movil.layout);
         if (esMovil()) ajustarTitulosAngostos(layout, el.clientWidth);
         // Móvil: sin arrastre (dragmode false); escritorio: arrastrar desplaza y la rueda hace zoom.
         layout.dragmode = esMovil() ? false : 'pan';
-        limitarEjes(layout, f.data);
+        limitarEjes(layout, f2.data);
         // Modo claro: los simuladores usan los colores oscuros de tema.ts; aquí se traducen (con su alfa).
-        if (claro) P.react(el, traducirAClaro(f.data), traducirAClaro(layout), CONFIG);
-        else P.react(el, f.data, layout, CONFIG);
+        if (claro) P.react(el, traducirAClaro(f2.data), traducirAClaro(layout), CONFIG);
+        else P.react(el, f2.data, layout, CONFIG);
       });
     });
   }
@@ -185,7 +191,10 @@ export class PlotlyChart implements AfterViewInit, OnDestroy {
   ngAfterViewInit(): void {
     const el = this.cont().nativeElement;
     // Al ocultar/mostrar el panel de parámetros cambia el ancho del contenedor: se reajusta el gráfico.
+    this.escala.set(factorPorAncho(el.clientWidth));
     this.observador = new ResizeObserver(() => {
+      const factor = factorPorAncho(el.clientWidth);
+      if (factor !== this.escala()) this.escala.set(factor);
       cancelAnimationFrame(this.cuadro);
       this.cuadro = requestAnimationFrame(() => {
         if (this.Plotly && el.offsetWidth > 0 && el.querySelector('.plotly')) this.Plotly.Plots.resize(el);

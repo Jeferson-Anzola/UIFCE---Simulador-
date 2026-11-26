@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Bloque, Figura } from '../../core/tipos';
 import { COLORES, SUAVE, punto, referencia } from '../../core/tema';
+import { MARCADOR } from '../../core/marcadores';
 import { fmt } from '../../core/formato';
 
 /** Referencia por defecto de Macro 2. */
@@ -52,7 +53,7 @@ export function equilibrio(
   color: string,
   ejes: { x0: number; y0: number; decX?: number; decY?: number; simbolo?: string },
 ): void {
-  const linea = { color, width: 1.2, dash: 'dot' };
+  const linea = { color, width: MARCADOR.guia, dash: 'dot' };
   fig.data.push({
     type: 'scatter',
     x: [x, x, null, x, ejes.x0],
@@ -66,7 +67,7 @@ export function equilibrio(
     hovertemplate: `${nombre}<br>(%{x:.${ejes.decX ?? 2}f}, %{y:.${ejes.decY ?? 2}f})<extra></extra>`,
   });
   const ann = (fig.layout.annotations ??= []);
-  const fuente = { size: 11, color };
+  const fuente = { size: MARCADOR.fuenteEje, color, weight: 700 };
   ann.push(
     {
       x,

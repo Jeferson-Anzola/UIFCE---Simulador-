@@ -25,6 +25,7 @@ import {
   tabla,
 } from '../../core/tema';
 import { Demanda, Oferta } from '../modelos/mercado';
+import { guiasEjes } from '../../core/marcadores';
 
 /** Texto de referencia de Fundamentos (sustituye al «Monsalve (2017)» de Micro 1). */
 export const AUTOR = 'Mankiw, Principios de Economía';
@@ -43,7 +44,7 @@ export const COLOR = {
   recaudo: 'rgba(183,156,255,0.40)',
   ppm: 'rgba(255,122,133,0.50)',
   textoSuave: SUAVE,
-  guia: 'rgba(238,241,246,0.45)',
+  guia: 'rgba(243,245,249,0.5)', // = COLORES.texto translúcido (el modo claro lo traduce)
   laffer: '#B79CFF',
 };
 
@@ -277,18 +278,22 @@ export function punto(
   puntoTema(fig, x, y, nombre, color, simbolo, texto, { textposition: posicion, ...extraSub(sub) });
 }
 
-/** Líneas punteadas desde un punto hasta los ejes. */
-export function guias(fig: Figura, x: number, y: number, sub: Sub = 1): void {
-  fig.data.push({
-    type: 'scatter',
-    x: [0, x, x],
-    y: [y, y, 0],
-    mode: 'lines',
-    showlegend: false,
-    hoverinfo: 'skip',
-    line: { color: COLOR.guia, width: 1, dash: 'dot' },
-    ...extraSub(sub),
+/**
+ * Líneas punteadas desde un punto hasta los ejes (helper común de core/marcadores). Con `rotulos`
+ * escribe sobre los ejes, p. ej. «Q* = 18» y «P* = 41».
+ */
+export function guias(fig: Figura, x: number, y: number, sub: Sub = 1, rotulos?: [string, string]): void {
+  const n = fig.data.length;
+  guiasEjes(fig, x, y, {
+    xref: sub === 2 ? 'x2' : 'x',
+    yref: sub === 2 ? 'y2' : 'y',
+    color: COLOR.guia,
+    rotuloX: rotulos?.[0],
+    rotuloY: rotulos?.[1],
   });
+  // Misma traza que antes (paridad con Python): solo cambian el grosor y el estilo.
+  const t = fig.data[n];
+  if (t && sub === 2) Object.assign(t, extraSub(sub));
 }
 
 export function horizontal(
